@@ -13,20 +13,28 @@ def new_when_field(fieldname: str) -> Predicate:
     return when_field
 
 
-def true(data: Dict, widget: "Whenable", manager: DialogManager):
+def true(*_args, **_kwargs):
     return True
+
+
+def false(*_args, **_kwargs):
+    return False
+
+
+def ensure_condition(when: WhenCondition, default: Predicate) -> Predicate:
+    if when is None:
+        return default
+    elif isinstance(when, str):
+        return new_when_field(when)
+    else:
+        return when
 
 
 class Whenable:
 
-    def __init__(self, when: WhenCondition = None):
-        self.condition: Predicate
-        if when is None:
-            self.condition = true
-        elif isinstance(when, str):
-            self.condition = new_when_field(when)
-        else:
-            self.condition = when
+    def __init__(self, when: WhenCondition = None, when_not: WhenCondition = None):
+        self.condition = ensure_condition(when, true)
+        self.not_condition = ensure_condition(when_not, false)
 
     def is_(self, data, manager):
-        return self.condition(data, self, manager)
+        return self.condition(data, self, manager) and not self.not_condition(data, self, manager)
